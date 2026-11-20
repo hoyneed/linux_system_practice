@@ -7,9 +7,11 @@
 ## 모의 실기 1 (유형 A — 시그널 기반 채굴기 제어 셸, 권장 30분)
 
 ### 상황 설명
+
 백그라운드로 실행 중인 채굴기 데몬([`01_signal_shell/miner_daemon.c`](file:///home/hoyneed/linux_system_practice/01_signal_shell/miner_daemon.c))에 시그널을 보내 채굴기를 제어하는 C 제어 셸 프로그램([`01_signal_shell/practice_ctl.c`](file:///home/hoyneed/linux_system_practice/01_signal_shell/practice_ctl.c))을 완성하세요.
 
 ### 사전 준비 (백그라운드 데몬 실행 및 PID 찾기)
+
 ```bash
 make all
 ./01_signal_shell/miner_daemon &
@@ -17,6 +19,7 @@ pidof miner_daemon      # 또는 pgrep -x miner_daemon / ps -ef | grep '[m]iner_
 ```
 
 ### 요구사항 명세
+
 1. **실행 인자 검증**:
    - 실행 형태: `./practice_ctl <PID>`
    - 인자 개수가 2개가 아니면 `stderr`에 사용법을 출력하고 종료 코드 `1`로 종료한다.
@@ -39,8 +42,9 @@ pidof miner_daemon      # 또는 pgrep -x miner_daemon / ps -ef | grep '[m]iner_
    - `gcc -Wall -Wextra -o 01_signal_shell/practice_ctl 01_signal_shell/practice_ctl.c` 빌드 시 경고 0건이어야 한다.
 
 ### 채점 기준표 (100점)
+
 | 항목 | 배점 | 확인 포인트 |
-|---|---:|---|
+| --- | ---: | --- |
 | 실행 인자 및 PID 검증 | 25 | `argc != 2`, `strtol` (`endptr`, `errno`), `pid <= 0`, `kill(pid, 0)` |
 | 프롬프트 및 `fgets` 입력 처리 | 20 | `fflush(stdout)`, EOF 처리, 개행 제거, 빈 줄 무시 |
 | 명령어 분기 및 `kill()` 전송 | 35 | `strcmp == 0`, 5종 시그널 정확히 매핑, `exit` |
@@ -53,9 +57,11 @@ pidof miner_daemon      # 또는 pgrep -x miner_daemon / ps -ef | grep '[m]iner_
 ## 모의 실기 2 (유형 B — Day2 p.116 멀티스레드 채굴기 셸, 권장 40분)
 
 ### 상황 설명
+
 Day2 116페이지 `[도전 4] 채굴기 프로젝트` 요구사항을 만족하는 멀티스레드 채굴기 셸([`02_thread_miner/practice_miner.c`](file:///home/hoyneed/linux_system_practice/02_thread_miner/practice_miner.c))을 완성하세요.
 
 ### 요구사항 명세
+
 1. **초기 실행**:
    - 프로그램 실행 시 채굴기(Thread) 1대가 자동으로 생성되어 채굴을 시작한다.
    - 각 채굴기는 **0.1초(`usleep(100000)`)마다 코인을 1씩 증가**시킨다.
@@ -71,12 +77,13 @@ Day2 116페이지 `[도전 4] 채굴기 프로젝트` 요구사항을 만족하�
    - `gcc -Wall -Wextra -o 02_thread_miner/practice_miner 02_thread_miner/practice_miner.c -lpthread` 빌드 시 경고가 없어야 한다.
 
 ### 채점 기준표 (100점)
+
 | 항목 | 배점 | 확인 포인트 |
-|---|---:|---|
+| --- | ---: | --- |
 | 스레드 생성 및 0.1초 채굴 동작 | 25 | 시작 시 1대 자동 시작, `usleep(100000)` |
 | `pthread_mutex` 동기화 | 25 | Critical Section 보호, sleep 중 락 점유 금지 |
 | FIFO Queue 기반 `add` / `del` | 30 | 가장 오래된 채굴기 우선 제거, 스레드 자원 회수(`pthread_join`) |
-| 셸 입력 처리 및 예외 처리 | 20 | `ssafy>> `, `show`, 빈 큐 `del`, 잘못된 명령, 무경고 빌드 |
+| 셸 입력 처리 및 예외 처리 | 20 | `ssafy>>`, `show`, 빈 큐 `del`, 잘못된 명령, 무경고 빌드 |
 
 - 참고 모범 답안: [`02_thread_miner/miner_thread.c`](file:///home/hoyneed/linux_system_practice/02_thread_miner/miner_thread.c)
 
