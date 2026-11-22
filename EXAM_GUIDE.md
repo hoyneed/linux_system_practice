@@ -17,14 +17,14 @@
 | 셸에서 프로세스 다루기 | `ps`, `pgrep`, `pidof`, `kill -시그널 PID`, `&` | Day3 p.7~8, p.39~44 |
 | C에서 시그널 보내기 | `kill()`, `<signal.h>`, `<sys/types.h>`, `pid_t` | Day3 p.62 `kill() system call` |
 | 명령 입력 반복 | 프롬프트 출력, `fgets`, 개행 제거, `strcmp`, 오류 안내 | Day3 p.107~108 Shell 구현 |
-| 실행 인자 | `argc`, `argv`, `atoi`, 인자 개수 확인 | Day3 p.108 `$person 14212` |
+| 실행 인자 | `argc`, `argv`, `strtol` (힌트: `atoi`), 인자 개수 확인 | Day3 p.108 `$person 14212` |
 | 빌드 | `gcc -o <출력파일> <소스.c>` | 전 실습 공통 (`-lpthread` 여부 구분) |
 
 ### 예상 출제 유형 2가지 비교
 
 - **유형 A (가장 유력 — 힌트 7개 항목과 100% 일치)**:
   - 백그라운드(`&`)로 실행 중인 대상 프로세스(채굴기 데몬 또는 펌웨어)의 PID를 `ps`/`pgrep`/`pidof`로 확인한다.
-  - 내가 작성한 제어 셸을 `./miner_ctl <PID>` 형태로 실행한다(`argc`, `argv`, `atoi`).
+  - 내가 작성한 제어 셸을 `./miner_ctl <PID>` 형태로 실행한다(`argc`, `argv`, `strtol`).
   - `ssafy>>` 프롬프트에서 `fgets`로 명령어를 입력받고 개행을 제거한 뒤 `strcmp`로 구분하여 `kill(target_pid, SIG...)`를 보낸다.
   - 실습 파일: [`01_signal_shell/miner_daemon.c`](file:///home/hoyneed/linux_system_practice/01_signal_shell/miner_daemon.c), [`01_signal_shell/miner_ctl.c`](file:///home/hoyneed/linux_system_practice/01_signal_shell/miner_ctl.c)
 - **유형 B (Day2 p.116 원형)**:
@@ -36,7 +36,7 @@
 flowchart LR
     subgraph TypeA["유형 A: 시그널 제어 셸 (힌트 100% 직결)"]
         D["대상 프로세스 (&amp; 실행)<br/>./miner_daemon &amp;"] -->|"ps / pgrep / pidof"| PID["PID 획득"]
-        PID -->|"./miner_ctl PID<br/>argc, argv, atoi"| CTL["제어 셸<br/>ssafy>> fgets + strcmp"]
+        PID -->|"./miner_ctl PID<br/>argc, argv, strtol"| CTL["제어 셸<br/>ssafy>> fgets + strcmp"]
         CTL -->|"kill(pid, SIGUSR1/2/INT/TERM/KILL)"| D
     end
 
@@ -154,11 +154,11 @@ int kill(pid_t pid, int sig);
 > **`pid` 값에 따른 `kill(pid, sig)` 동작 — 치명적 버그 주의!**
 >
 > - `pid > 0`: 지정한 PID를 가진 **특정 프로세스**에게 전송 (시험에서 의도하는 동작)
-> - `pid == 0`: **호출한 프로세스와 같은 프로세스 그룹의 모든 프로세스**에게 전송! (`atoi("abc")`가 `0`을 반환하므로 검증 없이 `kill()`을 호출하면 자기 자신과 쉘 프로세스 그룹 전체가 죽을 수 있음!)
+> - `pid == 0`: **호출한 프로세스와 같은 프로세스 그룹의 모든 프로세스**에게 전송! (`strtol("abc", ...)`처럼 변환 실패 시 `0`을 반환하므로 검증 없이 `kill()`을 호출하면 자기 자신과 쉘 프로세스 그룹 전체가 죽을 수 있음!)
 > - `pid == -1`: 권한이 있는 **시스템의 모든 프로세스**(init 제외)에게 전송
 > - `pid < -1`: 프로세스 그룹 ID가 `-pid`인 그룹 전체에 전송
 >
-> **해결책**: `atoi` 직후 반드시 `if (target_pid <= 0)` 검사를 넣고, 가능하면 `if (kill(target_pid, 0) == -1)`로 대상 생존 여부를 사전 검증하세요.
+> **해결책**: `strtol()` 호출 직후 반드시 `errno != 0 || endptr == argv[1] || *endptr != '\0' || val <= 0 || val > INT_MAX` 검사를 넣고, 가능하면 `if (kill(target_pid, 0) == -1)`로 대상 생존 여부를 사전 검증하세요.
 
 ### 2) `kill(pid, 0)`으로 생존 확인하기
 
@@ -252,7 +252,7 @@ while (1) {
 
 ---
 
-## Part 5. 실행 인자(`argc`, `argv`, `strtol`/`atoi`) & 빌드(`gcc -o`)
+## Part 5. 실행 인자(`argc`, `argv`, `strtol`) & 빌드(`gcc -o`)
 
 ### 1) `argc` / `argv`와 `strtol()` 정석 처리
 
@@ -437,8 +437,8 @@ void del_miner(void) {
 1. **함수 시그니처 정확히 쓰기 (GCC 최신 버전 주의)**
    - 시그널 핸들러: `void handler(int sig)` (`void handler()` 금지)
    - 스레드 함수: `void *worker(void *arg)` (`void *worker()` 금지)
-2. **`atoi` 반환값 `0`으로 인한 `kill(0, sig)` 사고 방지**
-   - 반드시 `if (pid <= 0)` 검사 후 `kill()` 호출.
+2. **`strtol()` 검증 누락으로 인한 `kill(0, sig)` 사고 방지**
+   - `strtol("abc", &endptr, 10)`도 `endptr` 검사를 생략하면 `0`을 반환하므로, 반드시 `errno != 0 || endptr == argv[1] || *endptr != '\0' || val <= 0 || val > INT_MAX` 검사 후 `kill()` 호출.
 3. **`strcmp` 반환값 `0` 혼동 금지**
    - 같으면 `0`, 다르면 `0`이 아님 → 항상 `strcmp(buf, "cmd") == 0`.
 4. **`fgets` 개행 문자 `\n` 제거 누락**

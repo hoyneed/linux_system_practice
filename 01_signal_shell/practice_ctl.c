@@ -27,9 +27,9 @@ int main(int argc, char *argv[]) {
 
   /*
    * TODO 2: argv[1]을 strtol로 변환하고 pid_t 검증
-   * - atoi("123abc")는 123을 반환하고 atoi("abc")는 0을 반환하므로
-   *   strtol()로 변환 오류(errno, endptr == argv[1], *endptr != '\0')와
-   *   범위(val <= 0 || val > INT_MAX)를 함께 검증하는 것이 안전합니다.
+   * - strtol()로 변환 오류(errno != 0, endptr == argv[1], *endptr != '\0')와
+   *   유효 PID 범위(val <= 0 || val > INT_MAX)를 반드시 검증하세요.
+   *   (검증 누락으로 pid가 0이 되면 현재 프로세스 그룹 전체에 시그널이 전송됩니다.)
    * - kill(target_pid, 0) == -1 로 대상 프로세스 존재 여부를 확인하세요.
    */
   char *endptr = NULL;

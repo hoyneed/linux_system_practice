@@ -8,7 +8,7 @@
 
 ### 상황 설명
 
-백그라운드로 실행 중인 채굴기 데몬([`01_signal_shell/miner_daemon.c`](file:///home/hoyneed/linux_system_practice/01_signal_shell/miner_daemon.c))에 시그널을 보내 채굴기를 제어하는 C 제어 셸 프로그램([`01_signal_shell/practice_ctl.c`](file:///home/hoyneed/linux_system_practice/01_signal_shell/practice_ctl.c))을 완성하세요.
+백그라운드로 실행 중인 채굴기 데몬([`01_signal_shell/miner_daemon.c`](./01_signal_shell/miner_daemon.c))에 시그널을 보내 채굴기를 제어하는 C 제어 셸 프로그램([`01_signal_shell/practice_ctl.c`](./01_signal_shell/practice_ctl.c))을 완성하세요.
 
 ### 사전 준비 (백그라운드 데몬 실행 및 PID 찾기)
 
@@ -50,7 +50,7 @@ pidof miner_daemon      # 또는 pgrep -x miner_daemon / ps -ef | grep '[m]iner_
 | 명령어 분기 및 `kill()` 전송 | 35 | `strcmp == 0`, 5종 시그널 정확히 매핑, `exit` |
 | 예외/오류 처리 및 무경고 빌드 | 20 | 잘못된 명령 안내, `kill()` 반환값 체크, `-Wall -Wextra` 통과 |
 
-- 참고 모범 답안: [`01_signal_shell/miner_ctl.c`](file:///home/hoyneed/linux_system_practice/01_signal_shell/miner_ctl.c)
+- 참고 모범 답안: [`01_signal_shell/miner_ctl.c`](./linux_system_practice/01_signal_shell/miner_ctl.c)
 
 ---
 
@@ -58,7 +58,7 @@ pidof miner_daemon      # 또는 pgrep -x miner_daemon / ps -ef | grep '[m]iner_
 
 ### 상황 설명
 
-Day2 116페이지 `[도전 4] 채굴기 프로젝트` 요구사항을 만족하는 멀티스레드 채굴기 셸([`02_thread_miner/practice_miner.c`](file:///home/hoyneed/linux_system_practice/02_thread_miner/practice_miner.c))을 완성하세요.
+Day2 116페이지 `[도전 4] 채굴기 프로젝트` 요구사항을 만족하는 멀티스레드 채굴기 셸([`02_thread_miner/practice_miner.c`](./02_thread_miner/practice_miner.c))을 완성하세요.
 
 ### 요구사항 명세
 
@@ -85,7 +85,7 @@ Day2 116페이지 `[도전 4] 채굴기 프로젝트` 요구사항을 만족하�
 | FIFO Queue 기반 `add` / `del` | 30 | 가장 오래된 채굴기 우선 제거, 스레드 자원 회수(`pthread_join`) |
 | 셸 입력 처리 및 예외 처리 | 20 | `ssafy>>`, `show`, 빈 큐 `del`, 잘못된 명령, 무경고 빌드 |
 
-- 참고 모범 답안: [`02_thread_miner/miner_thread.c`](file:///home/hoyneed/linux_system_practice/02_thread_miner/miner_thread.c)
+- 참고 모범 답안: [`02_thread_miner/miner_thread.c`](./02_thread_miner/miner_thread.c)
 
 ---
 
@@ -143,10 +143,10 @@ Day2 116페이지 `[도전 4] 채굴기 프로젝트` 요구사항을 만족하�
 반환값: 성공 시 <code>0</code>, 실패 시 <code>-1</code> (<code>errno</code> 설정).
 </details>
 
-**Q9.** 사용자가 `./ctl abc`를 입력했을 때 `pid_t pid = atoi(argv[1]); kill(pid, SIGTERM);` 코드가 매우 위험한 이유는 무엇인가요?
+**Q9.** 사용자가 `./ctl abc` 또는 `./ctl 123abc`를 입력했을 때 `long val = strtol(argv[1], &endptr, 10);`의 반환값만 그대로 `(pid_t)val`로 사용해 `kill(pid, SIGTERM);`을 호출하면 어떤 문제가 발생하나요?
 <details>
 <summary>정답 및 해설 보기</summary>
-<code>atoi("abc")</code>는 실패 시 <code>0</code>을 반환합니다. <code>kill(0, SIGTERM)</code>은 <strong>현재 프로세스 그룹에 속한 모든 프로세스(자기 자신과 셸 포함)</strong>에 종료 시그널을 보내버리므로 반드시 <code>if (pid &lt;= 0)</code> 검사가 필요합니다.
+<code>strtol("abc", &amp;endptr, 10)</code>은 변환 실패 시 <code>0</code>을 반환하므로 <code>kill(0, SIGTERM)</code>이 호출되어 <strong>현재 프로세스 그룹에 속한 모든 프로세스(자기 자신과 셸 포함)</strong>에 종료 시그널을 보내버립니다. 또한 <code>strtol("123abc", &amp;endptr, 10)</code>은 <code>123</code>을 반환해 의도치 않은 PID 123에 시그널을 보낼 수 있으므로, 반드시 <code>errno != 0 || endptr == argv[1] || *endptr != '\0' || val &lt;= 0 || val &gt; INT_MAX</code> 검사가 필요합니다.
 </details>
 
 **Q10.** `printf("ssafy>> ");` 직후 `fgets()`가 실행될 때 프롬프트가 화면에 보이지 않을 수 있는 이유와 해결책은?
